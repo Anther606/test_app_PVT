@@ -21,6 +21,10 @@
   const lapsesEl = document.getElementById('lapses');
   totalEl.textContent = TRIALS;
 
+  // ---- Geometry (declare BEFORE fitHiDPI to avoid TDZ)
+  let radius = 0;                       // circle radius
+  let curX = 0, curY = 0;               // current circle center
+
   // ---- HiDPI canvas
   function fitHiDPI() {
     const ratio = Math.max(1, window.devicePixelRatio || 1);
@@ -29,8 +33,8 @@
     canvas.width = Math.round(cssW * ratio);
     canvas.height = Math.round(cssH * ratio);
     ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-    // Recompute radius on resize
-    radius = Math.min(canvas.clientWidth, canvas.clientHeight) * 0.18; // malo manji da stane u kutove
+    // recompute radius on resize (a bit smaller to fit corners)
+    radius = Math.min(canvas.clientWidth, canvas.clientHeight) * 0.18;
   }
   new ResizeObserver(fitHiDPI).observe(canvas);
   fitHiDPI();
@@ -44,16 +48,11 @@
   let errors = 0;
   let lapses = 0;
 
-  // current circle geometry
-  let radius = Math.min(canvas.clientWidth, canvas.clientHeight) * 0.18;
-  let curX = canvas.clientWidth / 2;
-  let curY = canvas.clientHeight / 2;
-
-  // ---- Helpers for random position (keeps circle fully visible)
+  // ---- Helpers for random position (keep circle fully visible)
   function pickRandomPosition() {
     const cw = canvas.clientWidth;
     const ch = canvas.clientHeight;
-    const pad = 16; // sigurnosni rub
+    const pad = 16; // safe padding from edges
     const minX = radius + pad;
     const maxX = cw - radius - pad;
     const minY = radius + pad;
@@ -80,16 +79,13 @@
     ctx.fillStyle = '#cbd5e1';
     ctx.font = '18px system-ui, -apple-system, Segoe UI, Roboto';
     ctx.textAlign = 'center';
-    // naslov gore iznad kruga (centriramo na ekran)
     ctx.fillText(textTop, canvas.clientWidth / 2, (canvas.clientHeight / 2) - radius - 24);
-
     ctx.font = '14px system-ui, -apple-system, Segoe UI, Roboto';
     ctx.fillText(hint, canvas.clientWidth / 2, (canvas.clientHeight / 2) + radius + 24);
   }
 
   function renderWaiting() {
     drawBackground();
-    // neutralni krug ostaje u centru dok čeka
     const cx = canvas.clientWidth / 2;
     const cy = canvas.clientHeight / 2;
     drawCircle('#2a3142', cx, cy);
@@ -98,7 +94,6 @@
 
   function renderTarget() {
     drawBackground();
-    // krug na random poziciji
     drawCircle('#ef4444', curX, curY);
     drawUI('Tapni SADA!', 'Pogodi crveni krug što brže možeš.');
   }
@@ -143,8 +138,7 @@
     const delay = MIN_DELAY + Math.random() * (MAX_DELAY - MIN_DELAY);
     clearTimeout(timerId);
     timerId = setTimeout(() => {
-      // prije uključivanja signala odredi novu poziciju
-      pickRandomPosition();
+      pickRandomPosition();                 // choose new location
       state = 'target';
       readyAt = performance.now();
       renderTarget();
@@ -184,7 +178,6 @@
 
   function finishTest() {
     state = 'done';
-    // završni ekran
     drawBackground();
     const cx = canvas.clientWidth / 2;
     const cy = canvas.clientHeight / 2;
@@ -206,7 +199,6 @@
     startBtn.disabled = false;
     resetBtn.disabled = true;
 
-    // inicijalni prikaz
     drawBackground();
     const cx = canvas.clientWidth / 2;
     const cy = canvas.clientHeight / 2;
@@ -224,19 +216,14 @@
     if (state === 'waiting') {
       registerFalseStart();
     } else if (state === 'target') {
-      // provjeri je li tap/klik unutar kruga (jer je pomičan)
       const rect = canvas.getBoundingClientRect();
       const x = (ev.touches ? ev.touches[0].clientX : ev.clientX) - rect.left;
       const y = (ev.touches ? ev.touches[0].clientY : ev.clientY) - rect.top;
       const dx = x - curX;
       const dy = y - curY;
       const inside = (dx*dx + dy*dy) <= (radius*radius);
-      if (inside) {
-        recordReaction();
-      } else {
-        // klik mimo kruga tretiramo kao grešku (po želji možeš ignorirati)
-        registerFalseStart();
-      }
+      if (inside) recordReaction();
+      else registerFalseStart();
     }
   }
 
