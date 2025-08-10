@@ -97,7 +97,6 @@
   }
 
   function setStatus(msg){ statusEl.textContent = msg; }
-
   function avg(arr){ return arr.reduce((a,b)=>a+b,0) / (arr.length || 1); }
 
   function setStats(current=null){
@@ -118,19 +117,14 @@
     lapsesEl.textContent = lapses;
   }
 
-  // Ocjena: heuristika na temelju prosjeka + lapses + grešaka
+  // Ocjena
   function evaluate(){
     const a = avg(rtEffective);
     const e = errors;
     const l = lapses;
-
     if (rtEffective.length === 0) return {label:'Nedovoljno podataka', color:'#9aa3af'};
-
-    // Odličan
     if (a < 280 && e <= 1 && l <= 1) return {label:'Odličan', color:'#16a34a'};
-    // Normalan
     if (a < 380 && e <= 3 && l <= 3) return {label:'Normalan', color:'#fbbf24'};
-    // Ostalo
     return {label:'Potrebno poboljšanje', color:'#ef4444'};
   }
 
@@ -187,7 +181,6 @@
 
   function registerFalseStart(){
     errors++;
-    flash('#ef4444');
     setStats();
     state='waiting';
     scheduleTarget();
@@ -198,14 +191,10 @@
     rtAll.push(rt);
     if (rt > LAPSE_MS) lapses++;
 
-    // spremi samo ako nije probni
-    if (!isPractice(trial)) {
-      rtEffective.push(rt);
-    }
+    if (!isPractice(trial)) rtEffective.push(rt);
 
     setStats(rt);
 
-    // završni uvjeti: isteklo vrijeme ili dovršeni svi pokušaji
     const countedDone = rtEffective.length >= COUNTED_TRIALS;
     const totalDone   = trial >= TOTAL_TRIALS;
 
@@ -214,7 +203,6 @@
       return;
     }
 
-    // inače idemo dalje
     trial++;
     setTimeout(()=>{
       if (state!=='done'){ state='waiting'; scheduleTarget(); }
@@ -237,7 +225,6 @@
 
     const avgMs = rtEffective.length ? Math.round(avg(rtEffective)) : '—';
     setStatus(`${reason} • Prosjek: ${avgMs} ms • Greške: ${errors} • Lapses: ${lapses}`);
-    // (ovdje po želji može ići POST na backend s rtEffective itd.)
   }
 
   function reset(){
@@ -254,38 +241,27 @@
     drawUI('PVT spreman', 'Klikni Započni test.');
   }
 
-  function flash(color){
-    canvas.style.boxShadow=`0 0 0 2px ${color}`;
-    setTimeout(()=>canvas.style.boxShadow='none', 250);
+  // ---- Visual flashes (green/red)
+  function flashColor(color){
+    canvas.style.boxShadow = `0 0 30px ${color}`;
+    setTimeout(()=>canvas.style.boxShadow='none', 180);
   }
 
   // ---- Input
   function onUserTap(ev){
-    if (state==='waiting'){ 
-        flashColor('#7f1d1d'); // crvena
-        registerFalseStart(); 
+    if (state==='waiting'){
+      flashColor('#7f1d1d'); // crvena
+      registerFalseStart();
+    } else if (state==='target'){
+      const rect = canvas.getBoundingClientRect();
+      const x = (ev.touches ? ev.touches[0].clientX : ev.clientX) - rect.left;
+      const y = (ev.touches ? ev.touches[0].clientY : ev.clientY) - rect.top;
+      const dx = x - curX, dy = y - curY;
+      const inside = (dx*dx + dy*dy) <= (radius*radius);
+      if (inside) { flashColor('#16a34a'); recordReaction(); }
+      else        { flashColor('#7f1d1d'); registerFalseStart(); }
     }
-    else if (state==='target'){
-        const rect = canvas.getBoundingClientRect();
-        const x = (ev.touches ? ev.touches[0].clientX : ev.clientX) - rect.left;
-        const y = (ev.touches ? ev.touches[0].clientY : ev.clientY) - rect.top;
-        const dx = x - curX, dy = y - curY;
-        const inside = (dx*dx + dy*dy) <= (radius*radius);
-        if (inside) {
-            flashColor('#064e3b'); // zelena
-            recordReaction();
-        } else {
-            flashColor('#7f1d1d'); // crvena
-            registerFalseStart();
-        }
-    }
-}
-
-// Funkcija za kratki flash boje
-function flashColor(color){
-    canvas.style.boxShadow = `0 0 30px ${color}`;
-    setTimeout(()=>canvas.style.boxShadow='none', 250);
-}
+  }
 
   canvas.addEventListener('click', (e)=>onUserTap(e));
   canvas.addEventListener('touchstart', (e)=>{ e.preventDefault(); onUserTap(e); }, {passive:false});
