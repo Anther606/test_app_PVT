@@ -261,16 +261,31 @@
 
   // ---- Input
   function onUserTap(ev){
-    if (state==='waiting'){ registerFalseStart(); }
-    else if (state==='target'){
-      const rect = canvas.getBoundingClientRect();
-      const x = (ev.touches ? ev.touches[0].clientX : ev.clientX) - rect.left;
-      const y = (ev.touches ? ev.touches[0].clientY : ev.clientY) - rect.top;
-      const dx = x - curX, dy = y - curY;
-      const inside = (dx*dx + dy*dy) <= (radius*radius);
-      if (inside) recordReaction(); else registerFalseStart();
+    if (state==='waiting'){ 
+        flashColor('#7f1d1d'); // crvena
+        registerFalseStart(); 
     }
-  }
+    else if (state==='target'){
+        const rect = canvas.getBoundingClientRect();
+        const x = (ev.touches ? ev.touches[0].clientX : ev.clientX) - rect.left;
+        const y = (ev.touches ? ev.touches[0].clientY : ev.clientY) - rect.top;
+        const dx = x - curX, dy = y - curY;
+        const inside = (dx*dx + dy*dy) <= (radius*radius);
+        if (inside) {
+            flashColor('#064e3b'); // zelena
+            recordReaction();
+        } else {
+            flashColor('#7f1d1d'); // crvena
+            registerFalseStart();
+        }
+    }
+}
+
+// Funkcija za kratki flash boje
+function flashColor(color){
+    canvas.style.boxShadow = `0 0 30px ${color}`;
+    setTimeout(()=>canvas.style.boxShadow='none', 250);
+}
 
   canvas.addEventListener('click', (e)=>onUserTap(e));
   canvas.addEventListener('touchstart', (e)=>{ e.preventDefault(); onUserTap(e); }, {passive:false});
