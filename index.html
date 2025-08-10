@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="hr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>PVT Test – Canvas</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="wrap">
+    <div class="panel">
+      <h1>PVT (Psychomotor Vigilance Test)</h1>
+      <p>Tapni/klikni krug <b>tek kad postane crven</b>. Ako klikneš prerano, bilježi se greška. 10 pokušaja.</p>
+    </div>
+
+    <div class="panel row">
+      <button id="startBtn">Započni test</button>
+      <button id="resetBtn" class="secondary" disabled>Reset</button>
+      <span id="status" aria-live="polite"></span>
+    </div>
+
+    <canvas id="pvtCanvas" width="800" height="420" aria-label="PVT canvas"></canvas>
+
+    <div class="legend">
+      <div>Pokušaj: <b id="attempt">0</b> / <span id="total">10</span></div>
+      <div>Trenutno: <b id="current">—</b> ms</div>
+    </div>
+
+    <div class="panel stats">
+      <div class="stat">Prosjek<b id="avg">—</b></div>
+      <div class="stat">Najbrže<b id="best">—</b></div>
+      <div class="stat">Najsporije<b id="worst">—</b></div>
+      <div class="stat">Greške / Lapses<b><span id="errors">0</span> / <span id="lapses">0</span></b></div>
+    </div>
+
+    <div class="panel">
+      <p style="font-size:14px">
+        * “Lapse” je reakcija &gt; 500 ms. Random čekanje prije crvenog signala: 2–5 s.  
+        Rezultate možete poslati na backend.
+      </p>
+    </div>
+  </div>
+
+<script src="script.js"></script>
+</body>
+</html>
